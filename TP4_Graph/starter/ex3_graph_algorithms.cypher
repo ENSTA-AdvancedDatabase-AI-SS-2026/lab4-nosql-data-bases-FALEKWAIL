@@ -39,15 +39,28 @@ RETURN communityId,
 ORDER BY taille DESC;
 
 
-// ─── 3.4 : Recommandation de contacts ────────────────────────────────────────
+// 3.4 : Recommandation de contacts
 // "Qui Ahmed devrait-il connaître ?" 
-// Critères : amis en commun + même cours + même filière
-
-// TODO: Écrire la requête de recommandation
 // Score = nb_amis_communs * 3 + nb_cours_communs * 2 + (meme_filiere ? 1 : 0)
-MATCH (moi:Etudiant {prenom: "Ahmed"})
-// TODO: Compléter la requête
-RETURN ??? AS suggestion, ??? AS score
+MATCH (moi:Etudiant {id: "E1"})
+MATCH (autre:Etudiant)
+WHERE NOT (moi)-[:CONNAIT]-(autre) AND moi <> autre
+
+// Amis en commun
+OPTIONAL MATCH (moi)-[:CONNAIT]-(ami)-[:CONNAIT]-(autre)
+WITH moi, autre, count(ami) AS nb_amis_communs
+
+// Cours en commun
+OPTIONAL MATCH (moi)-[:SUIT]->(c:Cours)<-[:SUIT]-(autre)
+WITH moi, autre, nb_amis_communs, count(c) AS nb_cours_communs
+
+// Calcul du score final
+WITH autre, 
+     (nb_amis_communs * 3) + (nb_cours_communs * 2) + (CASE WHEN moi.filiere = autre.filiere THEN 1 ELSE 0 END) AS score
+WHERE score > 0
+RETURN autre.prenom + " " + autre.nom AS suggestion, 
+       autre.universite AS universite,
+       score
 ORDER BY score DESC
 LIMIT 5;
 
