@@ -1,15 +1,15 @@
-// MongoDB initialization script
+// Initialisation de la base médicale
 db = db.getSiblingDB('medical_db');
 
-// Create admin user for medical_db
+// Créer l'utilisateur
 db.createUser({
   user: 'medical_user',
   pwd: 'medical123',
   roles: [{ role: 'readWrite', db: 'medical_db' }]
 });
 
-// Create collections with initial setup
+// Créer les tables (collections)
 db.createCollection('patients');
 db.createCollection('analyses');
 
-print('medical_db initialized successfully');
+print('✅ Base prête !');
