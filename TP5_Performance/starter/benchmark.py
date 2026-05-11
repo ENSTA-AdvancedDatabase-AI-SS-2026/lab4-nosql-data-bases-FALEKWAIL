@@ -102,39 +102,74 @@ def benchmark_write_cassandra(n: int = 100_000):
 
 def benchmark_read_redis(n: int = 1000):
     r = redis.Redis(host='localhost', port=6379, decode_responses=True)
-    def point_lookup():
-        r.get(f"test:{random.randint(0, 10000)}")
     
-    res = measure_latency(point_lookup, n)
-    print_results("Redis Read (Point Lookup)", res)
+    # 2.1 Point Lookup
+    def point(): r.get(f"test:{random.randint(0, 5000)}")
+    print_results("Redis Point Lookup", measure_latency(point, n))
+    
+    # 2.2 Range Query (Liste des 100 derniers)
+    r.lpush("bench_list", *range(1000))
+    def range_q(): r.lrange("bench_list", 0, 100)
+    print_results("Redis Range (LRANGE 100)", measure_latency(range_q, n))
 
 
 def benchmark_read_mongodb(n: int = 1000):
     client = MongoClient("mongodb://admin:admin123@localhost:27017/")
     coll = client["benchmark"]["test"]
-    def point_lookup():
-        coll.find_one({"_id": random.randint(0, 10000)})
+    
+    # 2.1 Point Lookup
+    def point(): coll.find_one({"_id": random.randint(0, 5000)})
+    print_results("MongoDB Point Lookup", measure_latency(point, n))
+    
+    # 2.2 Complex Query (Aggregation)
+    def complex_q():
+        list(coll.aggregate([
+            {"$match": {"_id": {"$gt": 2500}}},
+            {"$group": {"_id": None, "avg": {"$avg": "$_id"}}}
+        ]))
+    print_results("MongoDB Aggregation", measure_latency(complex_q, n // 10))
+
+
+# ─── Ex3 : Charge concurrente ─────────────────────────────────────────────────
+import threading
+
+def benchmark_concurrent(db_name: str, fn: Callable, n_clients: int = 10):
+    # On lance plusieurs threads pour simuler des clients
+    threads = []
+    start = time.perf_counter()
+    
+    for _ in range(n_clients):
+        t = threading.Thread(target=fn)
+        threads.append(t)
+        t.start()
         
-    res = measure_latency(point_lookup, n)
-    print_results("MongoDB Read (Point Lookup)", res)
+    for t in threads:
+        t.join()
+        
+    elapsed = time.perf_counter() - start
+    print(f"  Charge concurrente ({db_name}): {elapsed:.2f}s pour {n_clients} clients")
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 import random
 
 if __name__ == "__main__":
-    print("🚀 Benchmark NoSQL - Comparatif")
+    print("🚀 Benchmark NoSQL - Complet")
     print("="*60)
     
-    N = 5000  # On réduit pour que ça aille vite pendant le TP
+    N = 5000
     
-    print(f"\n📝 Benchmark Écriture ({N:,} enregistrements)")
+    print(f"\n📝 Ex1 : Benchmark Écriture ({N:,} enregistrements)")
     benchmark_write_redis(N)
     benchmark_write_mongodb(N)
     benchmark_write_cassandra(N)
     
-    print(f"\n📖 Benchmark Lecture ({N} requêtes)")
+    print(f"\n📖 Ex2 : Benchmark Lecture ({N} requêtes)")
     benchmark_read_redis(1000)
     benchmark_read_mongodb(1000)
+    
+    print(f"\n⚡ Ex3 : Test Charge Concurrente (10 clients)")
+    r = redis.Redis(host='localhost', port=6379)
+    benchmark_concurrent("Redis", lambda: r.get("test:1"), 10)
     
     print("\n✅ Benchmark terminé !")
