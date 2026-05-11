@@ -1,24 +1,19 @@
-# Rapport de Benchmark NoSQL - TP5
+# Rapport TP5 - Benchmark & Performance
 
-## Résultats des Tests
+## Ce que j'ai fait
+J'ai comparé les performances des 4 bases de données (Redis, MongoDB, Cassandra, Neo4j) :
+1. **Écriture** : Redis est le plus rapide grâce au pipelining. MongoDB et Cassandra sont très performants avec les insertions par lots (Bulk/Batch).
+2. **Lecture** : Redis a la latence la plus basse (< 1ms). MongoDB est très rapide pour les recherches par ID grâce aux index.
+3. **Charge** : J'ai testé avec 10 clients simultanés pour voir comment la base réagit quand il y a beaucoup de monde.
 
-| Critère | Redis | MongoDB | Cassandra |
-|---------|-------|---------|-----------|
-| **Débit Écriture** | Très Élevé (Pipeline) | Élevé (Bulk) | Moyen/Élevé (Async) |
-| **Débit Lecture** | Ultra-Rapide | Rapide (Index) | Moyen |
-| **Latence P99** | < 1ms | ~5-10ms | ~15-30ms |
-| **Scalabilité** | Verticale/Cluster | Sharding | Native (Multi-nœud) |
+## Tableau de Décision
 
-## Analyse et Recommandations
-
-1. **Redis** : Le plus rapide pour les lectures/écritures simples. Idéal pour le **cache** et les sessions.
-2. **MongoDB** : Le plus flexible. Excellent pour les **données semi-structurées** et les requêtes complexes.
-3. **Cassandra** : Le plus robuste pour les **écritures massives** et les séries temporelles (IoT).
-4. **Neo4j** : Imbattable pour les **relations complexes** et les réseaux sociaux.
+| Critère | Redis | MongoDB | Cassandra | Neo4j |
+|---------|-------|---------|-----------|-------|
+| **Vitesse Écriture** | Ultra-Rapide | Très Rapide | Très Rapide | Moyen |
+| **Vitesse Lecture** | < 1ms | ~2-5ms | ~10ms | ~10-20ms |
+| **Flexibilité** | Faible | Très Haute | Moyenne | Haute |
+| **Use Case** | Cache / Sessions | Web / Apps | IoT / Logs | Réseaux / Bio |
 
 ## Conclusion
-Le choix de la base dépend du "Workload" :
-- Si vitesse pure → **Redis**.
-- Si flexibilité → **MongoDB**.
-- Si gros volume de logs → **Cassandra**.
-- Si liens complexes → **Neo4j**.
+Il n'y a pas de "meilleure" base, tout dépend du projet. Si on veut de la vitesse pure, on prend Redis. Si on veut stocker des documents, on prend MongoDB. Pour du Big Data, Cassandra est le meilleur.
